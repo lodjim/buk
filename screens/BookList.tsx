@@ -3,9 +3,9 @@ import React, { useState, useCallback, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import * as SQLite from "expo-sqlite";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Add this import
 import { Text, List, Button, Avatar, IconButton } from "react-native-paper";
 
-// Initialize database
 const db = SQLite.openDatabaseSync("books.db");
 
 export default function BookList() {
@@ -24,10 +24,18 @@ export default function BookList() {
   const deleteBook = async (id) => {
     try {
       await db.runAsync("DELETE FROM books WHERE id = ?", [id]);
-      // Refresh the book list after deletion
       fetchBooks();
     } catch (error) {
       console.error("Error deleting book:", error);
+    }
+  };
+
+  // Add this function to save last opened book
+  const saveLastOpenedBook = async (book) => {
+    try {
+      await AsyncStorage.setItem("lastOpenedBook", JSON.stringify(book));
+    } catch (error) {
+      console.error("Error saving last opened book:", error);
     }
   };
 
@@ -63,6 +71,10 @@ export default function BookList() {
               title={item.title}
               description={item.author}
               left={() => <List.Icon icon="book" />}
+              onPress={() => {
+                saveLastOpenedBook(item); // Save the book before navigation
+                router.push(`/book/${item.id}`);
+              }}
               right={() => (
                 <View style={styles.rightContainer}>
                   {item.pathImage ? (
